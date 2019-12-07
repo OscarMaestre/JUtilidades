@@ -103,8 +103,10 @@ public class Utilidades {
         DataInputStream flujoReceptor=new DataInputStream(socket.getInputStream());
         FileOutputStream ficheroRecibido=new FileOutputStream(rutaFichero);
         
+        /*Primero esperamos a que se nos diga cuantos bytes ocupa el fichero*/
         long totalBytesParaRecibir=flujoReceptor.readLong();
-        System.out.println("Esperando un fichero de longitud:"+totalBytesParaRecibir);
+        
+        /*Y aquí se recibe el fichero bloque a bloque*/
         int numBytesLeidos = flujoReceptor.read(buffer);
         long contadorBytesRecibidos=numBytesLeidos;
         while (contadorBytesRecibidos != totalBytesParaRecibir){
@@ -112,14 +114,12 @@ public class Utilidades {
                     0, numBytesLeidos);
             numBytesLeidos = flujoReceptor.read(buffer);
             contadorBytesRecibidos+=numBytesLeidos;
-            System.out.print("\rBytes recibidos hasta el momento:"+
-                    contadorBytesRecibidos+" de "+totalBytesParaRecibir);
-        }
-        System.out.println("Fichero recibido!");
+        } /*Fin del while*/
+        
+        /*Cerramos el fichero y salimos*/
         ficheroRecibido.close();
     }
     
-    /*   */
     
     /**
      * Este método envía un fichero a través de un socket indicando primero el número
@@ -144,11 +144,13 @@ public class Utilidades {
 
         byte[] buffer=new byte[tamanoBuffer];        
 
+        /*Aquí se envia el fichero bloque a bloque*/
         int numBytesLeidos = ficheroParaEnviar.read(buffer);
         while (numBytesLeidos >0){
             flujoEmision.write(buffer, 0, numBytesLeidos);
             numBytesLeidos = ficheroParaEnviar.read(buffer);
         }
+        /*Y nos aseguramos de vaciar todos los búferes y salir*/
         flujoEmision.flush();
         ficheroParaEnviar.close();
     }
