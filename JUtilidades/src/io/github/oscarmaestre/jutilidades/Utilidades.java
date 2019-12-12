@@ -88,6 +88,19 @@ public class Utilidades {
     }
     
     
+    public static int getNumBytesALeer(int tamBuffer, long recuentoParcial, long totalALeer){
+        int numBytes=0;
+        long bytesPendientes=totalALeer - recuentoParcial;
+        System.out.println("Tam buffer:"+tamBuffer+" recuentoParcial:"+recuentoParcial+" total:"+totalALeer);
+        if (bytesPendientes<tamBuffer){
+            System.out.println("Hay que leer:"+bytesPendientes);
+            return (int) bytesPendientes;
+        }
+        else {
+            System.out.println("Hay que leer:"+tamBuffer);
+            return tamBuffer;
+        }
+    }
     /**
      * Recibe un fichero enviado a través de un socket, confiando en 
             que el emisor primero envía la longitud de dicho fichero 
@@ -105,17 +118,37 @@ public class Utilidades {
         
         /*Primero esperamos a que se nos diga cuantos bytes ocupa el fichero*/
         long totalBytesParaRecibir=flujoReceptor.readLong();
-        
+        System.out.println("El emisor ha notificado el tamaño del fichero:"+
+                totalBytesParaRecibir+" bytes");
         /*Y aquí se recibe el fichero bloque a bloque*/
-        int numBytesLeidos = flujoReceptor.read(buffer);
-        long contadorBytesRecibidos=numBytesLeidos;
+        long contadorBytesRecibidos=0;
+        
+        /* No podemos leer todos los bytes que queramos, es importante 
+        "no pasarnos" y leer solo hasta donde nos corresponda. Si nos excedemos
+        leeremos datos que no nos corresponden y estropearemos el envio */
+        int cuantosBytesHayQueLeer=Utilidades.getNumBytesALeer(
+                tamanoBuffer, contadorBytesRecibidos, totalBytesParaRecibir);
+        /*Ahora que sabemos cuantos bytes hay que leer leemos esos bytes*/
+        int numBytesLeidos = flujoReceptor.read(buffer, 0, cuantosBytesHayQueLeer);
+        /*Y tomamos nota de cuntos bytes llevamos leídos*/
+        contadorBytesRecibidos=numBytesLeidos;
         while (contadorBytesRecibidos != totalBytesParaRecibir){
+            
             ficheroRecibido.write(buffer, 
                     0, numBytesLeidos);
-            numBytesLeidos = flujoReceptor.read(buffer);
+            cuantosBytesHayQueLeer=Utilidades.getNumBytesALeer(
+                tamanoBuffer, contadorBytesRecibidos, totalBytesParaRecibir);
+            numBytesLeidos = flujoReceptor.read(buffer, 0, cuantosBytesHayQueLeer);
+            if (numBytesLeidos==-1){
+                break;
+            }
             contadorBytesRecibidos+=numBytesLeidos;
         } /*Fin del while*/
-        
+        /*Nos aseguramos de volcar el último buffer, que quizá no esté completo*/
+        if (numBytesLeidos!=-1){
+            ficheroRecibido.write(buffer, 
+                    0, numBytesLeidos);
+        }
         /*Cerramos el fichero y salimos*/
         ficheroRecibido.close();
     }
@@ -142,12 +175,15 @@ public class Utilidades {
         /*Enviamos la longitud del fichero*/
         flujoEmision.writeLong(bytesFichero);
 
+        System.out.println("Notificando al receptor el tamaño del fichero:"+
+                bytesFichero + " bytes");
         byte[] buffer=new byte[tamanoBuffer];        
 
         /*Aquí se envia el fichero bloque a bloque*/
         int numBytesLeidos = ficheroParaEnviar.read(buffer);
         while (numBytesLeidos >0){
             flujoEmision.write(buffer, 0, numBytesLeidos);
+            System.out.println("Enviados "+numBytesLeidos+" bytes");
             numBytesLeidos = ficheroParaEnviar.read(buffer);
         }
         /*Y nos aseguramos de vaciar todos los búferes y salir*/
