@@ -37,6 +37,10 @@ public class Utilidades {
             return bfr;
     }
         
+        public static void getVersion(){
+            System.out.println("Soy la version 1.0");
+        }
+        
     /**
      * Obtiene un flujo de salida que nos permite trabajar con líneas de texto
      * @param os Flujo de salida simple 
